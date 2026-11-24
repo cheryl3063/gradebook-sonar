@@ -10,6 +10,22 @@ from gradebook.report import (
 )
 
 
+@pytest.fixture(autouse=True)
+def run_in_tmp_dir(tmp_path, monkeypatch):
+    # load_csv only opens files inside the current folder
+    monkeypatch.chdir(tmp_path)
+
+
+def test_load_csv_rejects_path_outside_base(tmp_path):
+    with pytest.raises(GradebookFileError, match="Refusing"):
+        load_csv("../secret.csv", base_dir=tmp_path)
+
+
+def test_load_csv_rejects_non_csv(tmp_path):
+    with pytest.raises(GradebookFileError, match="Refusing"):
+        load_csv("notes.txt", base_dir=tmp_path)
+
+
 def write_csv(tmp_path, text):
     path = tmp_path / "grades.csv"
     path.write_text(text, encoding="utf-8")

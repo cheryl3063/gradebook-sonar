@@ -1,5 +1,6 @@
 """Reading gradebook CSV files and printing reports."""
 import csv
+from pathlib import Path
 
 from gradebook.grades import average, parse_score, student_stats
 
@@ -10,7 +11,17 @@ class GradebookFileError(Exception):
     """Raised when a gradebook CSV file cannot be read or contains bad data."""
 
 
-def load_csv(path):
+def safe_path(path, base_dir=None):
+    """Only allow .csv files inside the base directory (default: current folder)."""
+    base = Path(base_dir or Path.cwd()).resolve()
+    target = (base / path).resolve()
+    if not target.is_relative_to(base) or target.suffix.lower() != ".csv":
+        raise GradebookFileError(f"Refusing to open {path}: must be a .csv file inside {base}")
+    return target
+
+
+def load_csv(path, base_dir=None):
+    path = safe_path(path, base_dir)
     students = {}
     try:
         with open(path, newline="", encoding="utf-8") as f:
