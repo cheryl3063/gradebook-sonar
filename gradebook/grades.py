@@ -1,82 +1,60 @@
 """Core grade calculations for the Gradebook tracker."""
 
+INVALID_SCORE = "Invalid score"
+
+# (minimum score, letter) from highest to lowest; first match wins
+GRADE_BANDS = (
+    (95, "A+"),
+    (90, "A"),
+    (85, "B+"),
+    (80, "B"),
+    (75, "C+"),
+    (70, "C"),
+    (60, "D"),
+)
+
 
 def average(scores):
-    total = 0
-    for s in scores:
-        total = total + s
-    return total / len(scores)
+    return sum(scores) / len(scores)
 
 
 def weighted_average(scores, weights):
     if len(scores) != len(weights):
         raise ValueError("Invalid score list")
-    total = 0
-    weight_total = 0
-    for i in range(len(scores)):
-        total += scores[i] * weights[i]
-        weight_total += weights[i]
-    return total / weight_total
+    total = sum(score * weight for score, weight in zip(scores, weights))
+    return total / sum(weights)
 
 
 def letter_grade(score):
-    if score is None:
-        raise ValueError("Invalid score")
-    if score < 0 or score > 100:
-        raise ValueError("Invalid score")
-    if score >= 90:
-        if score >= 95:
-            return "A+"
-        else:
-            return "A"
-    else:
-        if score >= 80:
-            if score >= 85:
-                return "B+"
-            else:
-                return "B"
-        else:
-            if score >= 70:
-                if score >= 75:
-                    return "C+"
-                else:
-                    return "C"
-            else:
-                if score >= 60:
-                    return "D"
-                else:
-                    return "F"
+    if score is None or score < 0 or score > 100:
+        raise ValueError(INVALID_SCORE)
+    for minimum, letter in GRADE_BANDS:
+        if score >= minimum:
+            return letter
+    return "F"
 
 
 def parse_score(text):
     try:
         value = float(text)
-    except:
-        raise ValueError("Invalid score")
+    except (TypeError, ValueError) as error:
+        raise ValueError(INVALID_SCORE) from error
     if value < 0 or value > 100:
-        raise ValueError("Invalid score")
+        raise ValueError(INVALID_SCORE)
     return value
+
+
+def student_stats(scores):
+    """Return average, highest, lowest and letter grade for one student."""
+    avg = average(scores)
+    return {
+        "average": round(avg, 2),
+        "highest": max(scores),
+        "lowest": min(scores),
+        "letter": letter_grade(avg),
+    }
 
 
 def class_summary(students):
     """students: dict of name -> list of scores."""
-    result = {}
-    count = 0
-    for name in students:
-        scores = students[name]
-        avg = average(scores)
-        highest = scores[0]
-        for s in scores:
-            if s > highest:
-                highest = s
-        lowest = scores[0]
-        for s in scores:
-            if s < lowest:
-                lowest = s
-        result[name] = {
-            "average": round(avg, 2),
-            "highest": highest,
-            "lowest": lowest,
-            "letter": letter_grade(avg),
-        }
-    return result
+    return {name: student_stats(scores) for name, scores in students.items()}
