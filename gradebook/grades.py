@@ -15,14 +15,19 @@ GRADE_BANDS = (
 
 
 def average(scores):
+    if not scores:
+        raise ValueError("Cannot average an empty score list")
     return sum(scores) / len(scores)
 
 
 def weighted_average(scores, weights):
     if len(scores) != len(weights):
         raise ValueError("Invalid score list")
+    weight_total = sum(weights)
+    if weight_total <= 0:
+        raise ValueError("Weights must add up to more than zero")
     total = sum(score * weight for score, weight in zip(scores, weights))
-    return total / sum(weights)
+    return total / weight_total
 
 
 def letter_grade(score):

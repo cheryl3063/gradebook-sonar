@@ -60,3 +60,9 @@ def test_cli_bad_file(tmp_path):
 
 def test_cli_empty_file(tmp_path):
     assert main([str(write_csv(tmp_path, "name,a1\n"))]) == 1
+
+
+def test_load_csv_student_with_no_scores_is_rejected_by_report(tmp_path):
+    students = load_csv(write_csv(tmp_path, "name,a1\nAna\n"))
+    with pytest.raises(ValueError, match="empty"):
+        build_report(students)

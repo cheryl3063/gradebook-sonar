@@ -62,3 +62,14 @@ def test_class_summary():
     summary = class_summary({"Ana": [90, 100], "Ben": [50, 60]})
     assert summary["Ana"]["letter"] == "A+"
     assert summary["Ben"]["letter"] == "F"
+
+
+def test_average_empty_list_raises_clear_error():
+    # Independently tested risk: baseline crashed with ZeroDivisionError
+    with pytest.raises(ValueError, match="empty"):
+        average([])
+
+
+def test_weighted_average_zero_weights():
+    with pytest.raises(ValueError, match="Weights"):
+        weighted_average([80, 90], [0, 0])
