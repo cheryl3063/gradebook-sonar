@@ -1,7 +1,7 @@
 """Command-line entry point: python -m gradebook.cli data/sample.csv"""
 import sys
 
-from gradebook.report import LoadCsv, build_report, top_student
+from gradebook.report import GradebookFileError, build_report, load_csv, top_student
 
 
 def main(argv=None):
@@ -9,8 +9,13 @@ def main(argv=None):
     if not argv:
         print("Usage: python -m gradebook.cli <file.csv>")
         return 1
-    students = LoadCsv(argv[0])
+    try:
+        students = load_csv(argv[0])
+    except GradebookFileError as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
     if not students:
+        print("Error: no students found", file=sys.stderr)
         return 1
     print(build_report(students))
     print(f"Top student: {top_student(students)}")

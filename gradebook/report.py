@@ -1,61 +1,47 @@
 """Reading gradebook CSV files and printing reports."""
 import csv
 
-from gradebook.grades import average, letter_grade, parse_score
+from gradebook.grades import average, parse_score, student_stats
+
+REPORT_HEADER = "Name, Average, High, Low, Letter"
 
 
-def LoadCsv(path):
+class GradebookFileError(Exception):
+    """Raised when a gradebook CSV file cannot be read or contains bad data."""
+
+
+def load_csv(path):
     students = {}
     try:
-        with open(path, newline="") as f:
+        with open(path, newline="", encoding="utf-8") as f:
             reader = csv.reader(f)
-            header = next(reader)
-            for row in reader:
-                name = row[0]
-                scores = []
-                for cell in row[1:]:
-                    scores.append(parse_score(cell))
-                students[name] = scores
-    except:
-        print("Could not read file")
-        return {}
+            next(reader, None)  # skip header row
+            for line_number, row in enumerate(reader, start=2):
+                if not row:
+                    continue
+                try:
+                    students[row[0]] = [parse_score(cell) for cell in row[1:]]
+                except ValueError as error:
+                    raise GradebookFileError(
+                        f"{path}, line {line_number}: {error}"
+                    ) from error
+    except OSError as error:
+        raise GradebookFileError(f"Could not read {path}: {error}") from error
     return students
 
 
 def build_report(students):
-    lines = []
-    lines.append("Name, Average, High, Low, Letter")
-    for name in students:
-        scores = students[name]
-        avg = average(scores)
-        highest = scores[0]
-        for s in scores:
-            if s > highest:
-                highest = s
-        lowest = scores[0]
-        for s in scores:
-            if s < lowest:
-                lowest = s
-        letter = letter_grade(avg)
-        lines.append(f"{name}, {round(avg, 2)}, {highest}, {lowest}, {letter}")
+    lines = [REPORT_HEADER]
+    for name, scores in students.items():
+        stats = student_stats(scores)
+        lines.append(
+            f"{name}, {stats['average']}, {stats['highest']}, "
+            f"{stats['lowest']}, {stats['letter']}"
+        )
     return "\n".join(lines)
 
 
 def top_student(students):
-    best_name = None
-    best_avg = -1
-    for name in students:
-        scores = students[name]
-        avg = average(scores)
-        highest = scores[0]
-        for s in scores:
-            if s > highest:
-                highest = s
-        lowest = scores[0]
-        for s in scores:
-            if s < lowest:
-                lowest = s
-        if avg > best_avg:
-            best_avg = avg
-            best_name = name
-    return best_name
+    if not students:
+        return None
+    return max(students, key=lambda name: average(students[name]))
